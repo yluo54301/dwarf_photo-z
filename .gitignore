@@ -87,3 +87,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
+########### My custom ignores
+.ipynb_checkpoints
+.DS_Store
+from_alexie
+from_jinsoo
+from_josh
