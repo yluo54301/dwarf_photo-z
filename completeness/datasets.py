@@ -66,7 +66,7 @@ class HSC(object):
         super(HSC, self).__init__()
         self.filename = filename
 
-        self.df = pd.read_sql_table("hsc", "sqlite:///{}".format(filename),
+        self.df = pd.read_sql_table("hsc", "sqlite:///data/{}".format(filename),
                                     index_col="object_id")
 
         self.df = self.df[self.df.detect_is_primary]
@@ -153,7 +153,7 @@ class COSMOS(object):
         super(COSMOS, self).__init__()
         self.filename = filename
 
-        self.df = pd.read_sql_table("COSMOS", "sqlite:///{}".format(filename))
+        self.df = pd.read_sql_table("COSMOS", "sqlite:///data/{}".format(filename))
 
         # filter out bad data / non-galaxies
         self.df = self.df[self.df["photo_z"] > 0]
