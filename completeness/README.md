@@ -13,4 +13,6 @@ The next place to run `HSC_COSMOS_completeness.ipynb`. This'll show you a sample
 ## Begin Filtering out Galaxies
 Before we get to fancy image-capable machine learning techniques, we'll probably need to reduce the size of the dataset. Ideally we'd keep galaxies that are low mass + low redshift, while filtering out the rest.
 
-To see the first attempts on this, check out `HSC_COSMOS_filtering.ipynb`
+To see the first attempts on this, check out `HSC_COSMOS_filtering.ipynb`.
+
+To see a more in-depth analysis, check out `HSC_COSMOS_classifier_ROC_curves.ipynb`
