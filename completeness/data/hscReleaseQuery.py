@@ -1,9 +1,10 @@
 # original source: https://hsc-gitlab.mtk.nao.ac.jp/snippets/17
 # I don't know the license, so I'm going to assume it's okay with mine
 
+from __future__ import print_function
+
 import json
 import argparse
-import urllib2
 import time
 import sys
 import csv
@@ -13,18 +14,40 @@ import os.path
 import re
 import ssl
 
+import hsc_credentials
+
+
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError
+
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen, HTTPError, Request
+
+
 
 version = 20170216.1
 
 
-args = None
+# args = None
 
+# set default variables
+# (these match the default command line arguments)
+api_url = 'https://hsc-release.mtk.nao.ac.jp/datasearch/api/catalog_jobs/'
+release_version = 'pdr1'
+nomail = False
+skip_syntax_check = False
+password_env = 'HSC_SSP_CAS_PASSWORD'
+
+charset_default = "utf-8"
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--user', '-u', required=True,
                         help='specify your account name')
-    parser.add_argument('--release-version', '-r', choices='pdr1'.split(), default='pdr1',
+    parser.add_argument('--release-version', '-r', choices='pdr1'.split(), default=release_version,
                         help='specify release version')
     parser.add_argument('--delete-job', '-D', action='store_true',
                         help='delete the job you submitted after your downloading')
@@ -32,114 +55,201 @@ def main():
                         help='specify output format')
     parser.add_argument('--nomail', '-M', action='store_true',
                         help='suppress email notice')
-    parser.add_argument('--password-env', default='HSC_SSP_CAS_PASSWORD',
+    parser.add_argument('--password-env', default=password_env,
                         help='specify the environment variable that has STARS password as its content')
     parser.add_argument('--preview', '-p', action='store_true',
                         help='quick mode (short timeout)')
     parser.add_argument('--skip-syntax-check', '-S', action='store_true',
                         help='skip syntax check')
-    parser.add_argument('--api-url', default='https://hsc-release.mtk.nao.ac.jp/datasearch/api/catalog_jobs/',
+    parser.add_argument('--api-url', default=api_url,
                         help='for developers')
     parser.add_argument('sql-file', type=argparse.FileType('r'),
                         help='SQL file')
 
-    global args
+    # global args
     args = parser.parse_args()
 
-    credential = {'account_name': args.user, 'password': getPassword()}
+    credential = {'account_name': args.user, 'password': getPassword(password_env=password_env)}
     sql = args.__dict__['sql-file'].read()
 
+    sys.exit(
+        query_wrapper(credential, sql, 
+            args.preview, args.delete_job, args.out_format,
+            api_url=args.api_url, release_version=args.release_version,
+            nomail=args.nomail, skip_syntax_check=args.skip_syntax_check,
+            password_env=args.password_env,
+            )
+    )
+
+def query_wrapper(credential, sql, preview_results, delete_job, out_format,
+    download_file,
+    api_url=api_url, release_version=release_version, nomail=nomail,
+    skip_syntax_check=skip_syntax_check):
+    """ Provides a modular version of the core functionality,
+    which can be called from other modules, rather than only being called
+    from the command line
+
+    Inputs
+    ------
+    credential : dict
+        should have two keys: "account_name" and "password"
+    sql : str
+        the sql command that you want to run remotely
+    preview_results : bool
+        preview results, rather than getting full results?
+    delete_job : bool
+        delete job results after downloading?
+    out_format : str
+        output format type. Options: 'csv', 'csv.gz', 'sqlite3', 'fits'
+    download_file : writable file stream
+        e.g. `sys.stdout`, or the result of `open()`
+    api_url : Optional(str)
+        base url for remote database access
+    release_version : Optional(str)
+        which version of HSC do you want to query from?
+    nomail : Optional(bool)
+        skip sending an email to yourself when the job is completes?
+    skip_syntax_check : Optional(bool)
+        skip the standard syntax check before job is queued?
+
+
+    Returns
+    -------
+    return_status : int
+        should return either 0 (failure) or 1 (success)
+
+
+    Notes
+    -----
+    May raise a `KeyboardInterrupt` exception
+
+    Most of the arguments are almost, *but not quite* the same as those
+    read by `parser` in `main`. The biggest difference is `preview_results`
+    needed a new name, since `preview` is also a function.
+
+
+    """
     job = None
 
     try:
-        if args.preview:
-            preview(credential, sql, sys.stdout)
+        if preview_results:
+            preview(credential, sql, sys.stdout, 
+                api_url=api_url, release_version=release_version)
         else:
-            job = submitJob(credential, sql, args.out_format)
-            blockUntilJobFinishes(credential, job['id'])
-            download(credential, job['id'], sys.stdout)
-            if args.delete_job:
-                deleteJob(credential, job['id'])
-    except urllib2.HTTPError, e:
+            job = submitJob(credential, sql, out_format,
+                api_url=api_url, release_version=release_version, 
+                nomail=nomail, skip_syntax_check=skip_syntax_check)
+
+            blockUntilJobFinishes(credential, job['id'], api_url=api_url)
+            download(credential, job['id'], download_file, api_url=api_url)
+            if delete_job:
+                deleteJob(credential, job['id'], api_url=api_url)
+    except HTTPError as e:
         if e.code == 401:
-            print >> sys.stderr, 'invalid id or password.'
+            print('invalid id or password.', file=sys.stderr)
         if e.code == 406:
-            print >> sys.stderr, e.read()
+            print(e.read(), file=sys.stderr)
         else:
-            print >> sys.stderr, e
-    except QueryError, e:
-        print >> sys.stderr, e
+            print(e, file=sys.stderr)
+    except QueryError as e:
+        print(e, file=sys.stderr)
     except KeyboardInterrupt:
         if job is not None:
-            jobCancel(credential, job['id'])
+            jobCancel(credential, job['id'], api_url=api_url)
         raise
     else:
-        sys.exit(0)
+        return 0
 
-    sys.exit(1)
+    return 1
+
 
 
 class QueryError(Exception):
     pass
 
 
-def httpJsonPost(url, data):
+def httpJsonPost(url, data, read_and_decode=True):
     data['clientVersion'] = version
-    postData = json.dumps(data)
-    return httpPost(url, postData, {'Content-type': 'application/json'})
+    postData = json.dumps(data).encode(charset_default)
+    return httpPost(url, postData, {'Content-type': 'application/json'}, read_and_decode)
 
 
-def httpPost(url, postData, headers):
-    req = urllib2.Request(url, postData, headers)
+def httpPost(url, postData, headers, read_and_decode):
+    req = Request(url, postData, headers)
     skipVerifying = None
     try:
         skipVerifying = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     except AttributeError:
         pass
     if skipVerifying:
-        res = urllib2.urlopen(req, context=skipVerifying)
+        res = urlopen(req, context=skipVerifying)
     else:
-        res = urllib2.urlopen(req)
-    return res
+        res = urlopen(req)
+
+    if read_and_decode:    
+        charset = None
+        try:
+            charset = res.headers.get_content_charset()
+            if charset is None:
+                charset=charset_default
+        except AttributeError:
+            # res.headers.get_content_charset() isn't available in python 2
+            charset = charset_default
+
+        # print("charset: ", charset)
+        # res_read = res.read()
+        # print("res_read: ", res_read)
+        return res.read().decode(charset)
+    else:
+        return res
 
 
-def submitJob(credential, sql, out_format):
-    url = args.api_url + 'submit'
+def submitJob(credential, sql, out_format, 
+    api_url=api_url, release_version=release_version,
+    nomail=nomail, skip_syntax_check=skip_syntax_check):
+    url = api_url + 'submit'
     catalog_job = {
         'sql'                     : sql,
         'out_format'              : out_format,
         'include_metainfo_to_body': True,
-        'release_version'         : args.release_version,
+        'release_version'         : release_version,
     }
-    postData = {'credential': credential, 'catalog_job': catalog_job, 'nomail': args.nomail, 'skip_syntax_check': args.skip_syntax_check}
+    postData = {'credential': credential, 'catalog_job': catalog_job, 'nomail': nomail, 'skip_syntax_check': skip_syntax_check}
     res = httpJsonPost(url, postData)
-    job = json.load(res)
+    # print("res:       ", res)
+    # print("type(res): ", type(res))
+    # # print("res.headers.getheader('Content-Type'): ", res.headers.getheader('Content-Type'))
+    # print("res.headers.get_content_charset(): ", res.headers.get_content_charset())
+    # res = res.decode
+    # print("decoded res:       ", res)
+    # print("type(res): ", type(res))
+    job = json.loads(res)
     return job
 
 
-def jobStatus(credential, job_id):
-    url = args.api_url + 'status'
+def jobStatus(credential, job_id, api_url=api_url):
+    url = api_url + 'status'
     postData = {'credential': credential, 'id': job_id}
     res = httpJsonPost(url, postData)
-    job = json.load(res)
+    job = json.loads(res)
     return job
 
 
-def jobCancel(credential, job_id):
-    url = args.api_url + 'cancel'
+def jobCancel(credential, job_id, api_url=api_url):
+    url = api_url + 'cancel'
     postData = {'credential': credential, 'id': job_id}
     httpJsonPost(url, postData)
 
 
-def preview(credential, sql, out):
-    url = args.api_url + 'preview'
+def preview(credential, sql, out, api_url=api_url, release_version=release_version):
+    url = api_url + 'preview'
     catalog_job = {
         'sql'             : sql,
-        'release_version' : args.release_version,
+        'release_version' : release_version,
     }
     postData = {'credential': credential, 'catalog_job': catalog_job}
     res = httpJsonPost(url, postData)
-    result = json.load(res)
+    result = json.loads(res)
 
     writer = csv.writer(out)
     # writer.writerow(result['result']['fields'])
@@ -147,17 +257,17 @@ def preview(credential, sql, out):
         writer.writerow(row)
 
     if result['result']['count'] > len(result['result']['rows']):
-        raise QueryError, 'only top %d records are displayed !' % len(result['result']['rows'])
+        raise QueryError('only top {:d} records are displayed !'.format(len(result['result']['rows'])))
 
 
-def blockUntilJobFinishes(credential, job_id):
+def blockUntilJobFinishes(credential, job_id, api_url=api_url):
     max_interval = 5 * 60 # sec.
     interval = 1
     while True:
         time.sleep(interval)
-        job = jobStatus(credential, job_id)
+        job = jobStatus(credential, job_id, api_url=api_url)
         if job['status'] == 'error':
-            raise QueryError, 'query error: ' + job['error']
+            raise QueryError('query error: ' + job['error'])
         if job['status'] == 'done':
             break
         interval *= 2
@@ -165,10 +275,10 @@ def blockUntilJobFinishes(credential, job_id):
             interval = max_interval
 
 
-def download(credential, job_id, out):
-    url = args.api_url + 'download'
+def download(credential, job_id, out, api_url=api_url):
+    url = api_url + 'download'
     postData = {'credential': credential, 'id': job_id}
-    res = httpJsonPost(url, postData)
+    res = httpJsonPost(url, postData, read_and_decode=False)
     bufSize = 64 * 1<<10 # 64k
     while True:
         buf = res.read(bufSize)
@@ -177,15 +287,18 @@ def download(credential, job_id, out):
             break
 
 
-def deleteJob(credential, job_id):
-    url = args.api_url + 'delete'
+def deleteJob(credential, job_id, api_url=api_url):
+    url = api_url + 'delete'
     postData = {'credential': credential, 'id': job_id}
     httpJsonPost(url, postData)
 
 
-def getPassword():
-    password_from_envvar = os.environ.get(args.password_env, '')
-    if password_from_envvar != '':
+def getPassword(password_env=password_env):
+    password_from_envvar = os.environ.get(password_env, '')
+
+    if hsc_credentials.password is not None:
+        return hsc_credentials.password
+    elif password_from_envvar != '':
         return password_from_envvar
     else:
         return getpass.getpass('password? ')
