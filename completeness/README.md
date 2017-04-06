@@ -5,7 +5,7 @@
 I've included a version of the COSMOS catalog in this repo (`data/COSMOS_reference.sqlite`).
 
 ### HSC
-Unfortunately the HSC dataset is too large to fit as a single file in this directory (and the exact feature set that I want to include is still in flux). So for now you'll have to download it yourself (see `get_data.ipynb`)
+Unfortunately the HSC dataset is too large to fit as a single file in this directory (and the exact feature set that I want to include is still in flux). So for now you'll have to download it using `data/get_fluxes.ipynb`
 
 ## Get an Overview of the Data
 The next place to run `HSC_COSMOS_completeness.ipynb`. This'll show you a sample of the HSC and COSMOS footprints. It'll also show you about breakdown of COSMOS in (photo-z, stellar mass) space.  Finally, it'll display the estimated completeness of HSC, relative to the known COSMOS objects.

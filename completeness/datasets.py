@@ -40,7 +40,10 @@ class HSC(object):
     
     Notes
     -----
-    Possible flux bands are {g,r,i,z,y} (see `*cmodel_flux*` variables in `df`)
+    Available flux bands are {g,r,i,z,y} (see `*cmodel_flux*` variables in `df`)
+
+    The required sqlite file isn't included in the github repo.
+    In order to get this data, run the notebook `data/get_fluxes.ipynb`
 
     """
     def __init__(self, filename):
