@@ -156,7 +156,8 @@ class COSMOS(object):
         super(COSMOS, self).__init__()
         self.filename = filename
 
-        self.df = pd.read_sql_table("COSMOS", "sqlite:///data/{}".format(filename))
+        self.df = pd.read_sql_table("COSMOS", "sqlite:///data/{}".format(filename),
+            index_col="id")
 
         # filter out bad data / non-galaxies
         self.df = self.df[self.df["photo_z"] > 0]
