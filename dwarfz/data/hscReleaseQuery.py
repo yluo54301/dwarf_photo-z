@@ -178,7 +178,7 @@ def httpPost(url, postData, headers, read_and_decode):
     req = Request(url, postData, headers)
     skipVerifying = None
     try:
-        skipVerifying = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        skipVerifying = ssl.SSLContext(ssl.PROTOCOL_TLS)
     except AttributeError:
         pass
     if skipVerifying:
