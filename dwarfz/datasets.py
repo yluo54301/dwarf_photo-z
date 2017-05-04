@@ -1,8 +1,20 @@
+# give access to importing dwarfz
+import os, sys
+dwarfz_package_dir = os.getcwd().split("dwarfz")[0]
+if dwarfz_package_dir not in sys.path:
+    sys.path.insert(0, dwarfz_package_dir)
+
+import dwarfz
+    
+# back to regular import statements
+
 import pandas as pd
 from scipy import interpolate
 
 
-# catalog abstract parent class?
+
+
+############### CLASSES ##############
 
 class HSC(object):
     """HSC 
@@ -70,7 +82,7 @@ class HSC(object):
         super(HSC, self).__init__()
         self.filename = filename
 
-        self.df = pd.read_sql_table("hsc", "sqlite:///data/{}".format(filename),
+        self.df = pd.read_sql_table("hsc", "sqlite:///{}".format(filename),
                                     index_col="object_id")
 
         self.df = self.df[self.df.detect_is_primary]
@@ -157,7 +169,7 @@ class COSMOS(object):
         super(COSMOS, self).__init__()
         self.filename = filename
 
-        self.df = pd.read_sql_table("COSMOS", "sqlite:///data/{}".format(filename),
+        self.df = pd.read_sql_table("COSMOS", "sqlite:///{}".format(filename),
             index_col="id")
 
         # filter out bad data / non-galaxies
@@ -171,58 +183,7 @@ class COSMOS(object):
         self.label = "COSMOS"
 
 
-
-
-def get_COSMOS_completeness():
-    """ Gets interpolators for the COSMOS completeness limits as a function of redshift
-
-    I *think* this is the 50% completeness threshold for each type of galaxy
-    ("all", "passive", "active" [star-forming]) in terms of the stellar mass.
-    (I.e. below this mass, cosmos isn't confident that it's complete)
-    
-    
-    Inputs
-    ------
-        None
-        
-    Outputs
-    -------
-        dict of scipy.interpolate.interpolate.interp1d objects
-            - dictionary keys are "all", "passive" and "active", 
-              mapping to respective interpolators
-            - Interpolators take in redshift, and return the 
-              stellar mass completeness limit in log M_solar units
-    
-    
-    Notes
-    -----
-    This is taken from Alexie's `ms_limit.pro` file. I *think* these are 
-    completeness limits for respective galaxy types, not classification cuts
-    for active vs. passive.
-    
-    """
-
-    redshifts = [0.17, 0.24, 0.32, 0.37, 0.43, 0.5]
-
-    # ALL GALAXIES
-    log_masses = [ 7.53,  7.93,  8.22,  8.38,  8.52,  8.66]
-    interp_all_galaxies = interpolate.interp1d(redshifts, log_masses)
-    
-    # PASSIVE GALAXIES
-    log_masses = [ 7.68,  8.07,  8.38,  8.59,  8.74,  8.88]
-    interp_passive_galaxies = interpolate.interp1d(redshifts, log_masses)
-    
-    # ACTIVE GALAXIES
-    log_masses = [ 7.51,  7.91,  8.17,  8.30,  8.43,  8.55]
-    interp_active_galaxies = interpolate.interp1d(redshifts, log_masses)
-    
-    
-    return {
-        "all"     : interp_all_galaxies,
-        "passive" : interp_passive_galaxies,
-        "active"  : interp_active_galaxies,
-    }
-
+############### FUNCTIONS ##############
 
 
 

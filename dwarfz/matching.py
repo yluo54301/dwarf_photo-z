@@ -1,3 +1,14 @@
+# give access to importing dwarfz
+import os, sys
+dwarfz_package_dir = os.getcwd().split("dwarfz")[0]
+if dwarfz_package_dir not in sys.path:
+    sys.path.insert(0, dwarfz_package_dir)
+
+import dwarfz
+    
+# back to regular import statements
+
+
 import numpy as np
 import pandas as pd
 import astropy
@@ -6,12 +17,7 @@ from astropy import units as u
 from astropy import coordinates
 
 
-# def match(dataset_1, dataset_2):
-#   """Matches objects in dataset_1, to the closest object in dataset_2
-
-#   This is basically a wrapper on 
-
-#   """
+############### CLASSES ##############
 
 
 class Matches(object):
@@ -34,8 +40,6 @@ class Matches(object):
         - matches closer than this are considered successful matches
         - default : 1 arcsec
         - must have angular units (e.g. arcsec)
-    save : Optional(bool)
-        - save matches to disk? (overwrites `data/matches.sqlite3`)
 
     
     Variables
@@ -69,7 +73,7 @@ class Matches(object):
         - recompute_match(new_threshold_match)
             - overwrites threshold_match and recomputes `df.match`
         - save_to_filename(filename)
-            - saves the dataframe to disk as a sqlite3 table
+            - saves `self.df` as a sql table to `filename`
 
     Class Methods
     -------------
@@ -94,7 +98,6 @@ class Matches(object):
     def __init__(self, catalog_1, catalog_2,
         threshold_error = threshold_error_default,
         threshold_match = threshold_match_default,
-        save = True
         ):
         super(Matches, self).__init__()
         self.catalog_1 = catalog_1
@@ -127,9 +130,6 @@ class Matches(object):
 
         self.recompute_error(threshold_error)
         self.recompute_match(threshold_match)
-
-        if save:
-            self.save_to_filename("data/matches.sqlite3")
 
 
     @u.quantity_input(threshold_error=u.arcsec)
@@ -189,5 +189,6 @@ class Matches(object):
         return df
 
 
+############### FUNCTIONS ##############
 
 
