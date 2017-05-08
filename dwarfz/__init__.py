@@ -1,6 +1,8 @@
 __all__ = [
 	"datasets",
-	"matching"
+	"matching",
+	"hsc_release_query",
+	"hsc_credentials",
 ]
 from . import *
 
