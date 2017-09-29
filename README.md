@@ -1,5 +1,5 @@
 # dwarf_photo-z
-Empirical identification of dwarf galaxies at low redshift (z<.15) and low stellar mass (10^8 < M_stellar < 10^9) in the [Hyper Suprime-Cam survey](https://hsc-release.mtk.nao.ac.jp/doc/).
+Empirical identification of dwarf galaxies at low redshift (z<.15) and low stellar mass (10$^8$ < M_stellar < 10$^9$ M$_\odot$) in the [Hyper Suprime-Cam survey](https://hsc-release.mtk.nao.ac.jp/doc/).
 -------
 
 Author: Eric Gentry   (gentry.e@gmail.com; egentry@ucsc.edu)   
