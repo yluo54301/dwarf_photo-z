@@ -24,4 +24,3 @@ Requirements
    - and a bunch of packages that I think are all in the python standard library
    
  - An HSC database account (publically available; check for details [here](https://hsc-release.mtk.nao.ac.jp/doc/index.php/tools/))
- - A method for getting HSC galaxy images ([this might work](https://hsc-release.mtk.nao.ac.jp/das_quarry/))
