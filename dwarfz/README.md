@@ -10,5 +10,5 @@ Unfortunately the HSC dataset is too large to fit as a single file in this direc
 
 -------
 
-For more information about this project, I suggest checking out the [wiki associated with this github repo](https://github.com/egentry/dwarf_photo-z/wiki).
+For more information about this project, I suggest checking out the [wiki associated with this github repo](https://github.com/yluo54301/dwarf_photo-z/wiki).
 

@@ -4,7 +4,7 @@ We want to find galaxies within a particular redshift range using a narrowband f
 
 **The challenge** is that this filter will also identify higher redshift galaxies that have other emission lines (e.g. OIII) that have been redshifted to the same wavelength range.
 
-![comparison of target and contaminant populations](https://github.com/egentry/dwarf_photo-z/raw/master/misc/linkable_images/2019_04/2019_04_02/comparison%20of%20narrow%20band%20target%20and%20contaminant%20galaxies.png)
+![comparison of target and contaminant populations](https://github.com/yluo54301/dwarf_photo-z/raw/master/misc/linkable_images/2019_04/2019_04_02/comparison%20of%20narrow%20band%20target%20and%20contaminant%20galaxies.png)
 
 **The goal** is to "de-confuse" these two populations: the low-*z* target galaxies, and the high-*z* contaminants. We will try **2 methods**:
 
