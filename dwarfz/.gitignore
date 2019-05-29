@@ -1,2 +1,8 @@
 COSMOS_reference_table.txt
 HSC_COSMOS_median_forced.sqlite3
+*.h5
+*.hdf5
+*.sqlite3
+*.npy
+*.csv
+
