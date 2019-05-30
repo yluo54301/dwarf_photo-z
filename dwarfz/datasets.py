@@ -1,13 +1,3 @@
-# give access to importing dwarfz
-import os, sys
-dwarfz_package_dir = os.getcwd().split("dwarfz")[0]
-if dwarfz_package_dir not in sys.path:
-    sys.path.insert(0, dwarfz_package_dir)
-
-import dwarfz
-    
-# back to regular import statements
-
 import pandas as pd
 from scipy import interpolate
 
